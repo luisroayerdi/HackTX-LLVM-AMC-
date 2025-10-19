@@ -115,12 +115,12 @@
             display: flex;
             flex-grow: 1; 
             position: relative;
+            overflow: hidden;
         }
 
         .left-panel {
             background: #0d1117;
             border-right: 1px solid #30363d;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
             min-width: 300px;
@@ -136,168 +136,32 @@
             flex-shrink: 0;
         }
 
-        .code-editor {
+        .code-editor-wrapper {
             flex: 1;
-            position: relative;
-            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-            font-size: 13px;
-            line-height: 1.6;
-            display: flex;
-        }
-        
-        .gutter {
-            background: #161b22;
-            border-right: 1px solid #30363d;
-            padding: 16px 8px; 
-            color: #6e7681;
-            text-align: right;
-            width: 62px;
-            flex-shrink: 0;
-            overflow: hidden;
-            position: relative;
-            user-select: none;
-            line-height: 1.6;
-            z-index: 3;
             display: flex;
             flex-direction: column;
-            overflow: hidden; 
-        }
-        
-        .line-number-item {
-            padding-right: 8px;
-            height: 1.6em; 
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            width: 100%;
-        }
-
-        .line-number-item.error-line {
-            background: rgba(248, 81, 73, 0.1);
-        }
-        
-        .line-number-item.warning-line {
-            background: rgba(255, 171, 0, 0.1);
-        }
-        
-        .line-number-item.note-line {
-            background: rgba(88, 166, 255, 0.1);
-        }
-
-        .error-marker {
-            color: #f85149;
-            font-size: 10px;
-            margin-left: 4px;
-            cursor: pointer;
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-        }
-        
-        .warning-marker {
-            color: #ffab00;
-            font-size: 10px;
-            margin-left: 4px;
-            cursor: pointer;
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-        }
-        
-        .note-marker {
-            color: #58a6ff;
-            font-size: 10px;
-            margin-left: 4px;
-            cursor: pointer;
-            position: relative;
-            display: inline-flex;
-            align-items: center;
+            overflow: hidden;
         }
 
         #code-input {
-            flex-grow: 1;
-            background: transparent;
+            flex: 1;
+            width: 100%;
+            background: #0d1117;
             border: none;
             outline: none;
-            color: transparent; 
-            caret-color: #c9d1d9;
+            color: #c9d1d9;
             font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-            font-size: 13px;
+            font-size: 14px;
             line-height: 1.6;
             resize: none;
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 62px;
-            right: 0;
             padding: 16px;
-            white-space: pre;
-            overflow: auto; 
-            z-index: 100; 
-            box-sizing: border-box;
-            -webkit-text-fill-color: transparent;
+            overflow: auto;
         }
 
-        .syntax-highlight {
-            flex-grow: 1;
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 62px;
-            right: 0;
-            padding: 16px;
-            white-space: pre;
-            pointer-events: none;
-            z-index: 50; 
-            box-sizing: border-box;
-            overflow: hidden; 
-        }
-        
-        .diagnostic-tooltip {
-            position: absolute;
-            background: #1f1f1f;
-            border: 1px solid #30363d;
-            border-radius: 4px;
-            padding: 8px 12px;
-            font-size: 12px;
-            white-space: pre-wrap;
-            max-width: 300px;
-            z-index: 200; 
-            display: none;
-            left: 100%;
-            transform: translateY(-50%) translateX(10px);
-            pointer-events: auto;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        
-        .error-marker .diagnostic-tooltip {
-            border-color: #f85149;
-            color: #f85149;
-        }
-
-        .warning-marker .diagnostic-tooltip {
-            border-color: #ffab00;
-            color: #ffab00;
-        }
-        
-        .note-marker .diagnostic-tooltip {
-            border-color: #58a6ff;
-            color: #58a6ff;
-        }
-        
-        .error-marker:hover .diagnostic-tooltip,
-        .warning-marker:hover .diagnostic-tooltip,
-        .note-marker:hover .diagnostic-tooltip {
-            display: block;
-        }
-
-        .keyword { color: #ff7b72; }
-        .type { color: #79c0ff; }
-        .function { color: #d2a8ff; }
-        .string { color: #a5d6ff; }
-        .comment { color: #8b949e; }
-        .macro { color: #f0883e; }
-        .literal { color: #58a6ff; }
+        #code-input::-webkit-scrollbar { width: 10px; }
+        #code-input::-webkit-scrollbar-track { background: #0d1117; }
+        #code-input::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+        #code-input::-webkit-scrollbar-thumb:hover { background: #484f58; }
 
         .resizer {
             width: 4px;
@@ -373,7 +237,6 @@
         @media (max-width: 768px) {
             .main-container {
                 flex-direction: column;
-                overflow-y: auto;
             }
             .left-panel {
                 width: 100%;
@@ -414,11 +277,9 @@
 
         <div class="main-container">
             <div class="left-panel">
-                <div class="code-header">C++ Code Editor (Simulated Diagnostics Active)</div>
-                <div class="code-editor">
-                    <div id="gutter" class="gutter"></div>
-                    <textarea id="code-input" spellcheck="false"></textarea>
-                    <pre id="highlight-layer" class="syntax-highlight"></pre>
+                <div class="code-header">C++ Code Editor</div>
+                <div class="code-editor-wrapper">
+                    <textarea id="code-input" spellcheck="false" placeholder="Write your C++ code here..."></textarea>
                 </div>
             </div>
 
@@ -522,6 +383,34 @@
         // API Configuration
         const API_BASE_URL = 'http://localhost:3000';
 
+        // Get elements
+        const codeInput = document.getElementById('code-input');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const summaryContent = document.getElementById('summary-content');
+
+        // Initial C++ code template (without headers to avoid include issues)
+        const initialCode = `// Simple C++ code for micro-architecture analysis
+// Note: Avoid #include if you get compilation errors
+
+int factorial(int n) {
+    int result = 1;
+    for (int i = 2; i <= n; i++) {
+        result *= i;
+    }
+    return result;
+}
+
+int main() {
+    int sum = 0;
+    for (int i = 0; i < 10; i++) {
+        sum += i;
+    }
+    sum += factorial(5);
+    return sum;
+}`;
+
+        codeInput.value = initialCode;
+
         // Resizer functionality
         const resizer = document.querySelector('.resizer');
         const leftPanel = document.querySelector('.left-panel');
@@ -579,6 +468,12 @@
             });
         });
 
+        // Select All button
+        document.querySelector('.select-all-btn').addEventListener('click', () => {
+            codeInput.focus();
+            codeInput.select();
+        });
+
         // Function to update circular progress
         function updateProgress(percentage, element) {
             const circle = element.querySelector('.progress-ring-circle.active');
@@ -587,7 +482,7 @@
             const offset = circumference - (percentage / 100) * circumference;
             
             circle.style.strokeDashoffset = offset;
-            text.textContent = `${percentage}%`;
+            text.textContent = `${Math.round(percentage)}%`;
         }
 
         // Function to update pipeline diagram based on analysis results
@@ -670,7 +565,7 @@
         }
 
         // Analyze button click handler
-        document.getElementById('analyze-btn').addEventListener('click', async () => {
+        analyzeBtn.addEventListener('click', async () => {
             if (isAnalyzing) return;
 
             const code = codeInput.value;
@@ -680,9 +575,6 @@
             }
 
             isAnalyzing = true;
-            const analyzeBtn = document.getElementById('analyze-btn');
-            const summaryContent = document.getElementById('summary-content');
-            
             analyzeBtn.disabled = true;
             analyzeBtn.innerHTML = '<span class="loading-spinner"></span> Analyzing...';
             summaryContent.innerHTML = 'Running LLVM MCA analysis... This may take a few seconds.';
@@ -704,7 +596,7 @@
                 if (result.error) {
                     summaryContent.innerHTML = `<span style="color: #f85149;"><strong>Error:</strong> ${result.error}</span>`;
                     if (result.details) {
-                        summaryContent.innerHTML += `<br><br><pre style="background: #0d1117; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 11px;">${result.details}</pre>`;
+                        summaryContent.innerHTML += `<br><br><pre style="background: #0d1117; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 11px; max-height: 400px; overflow-y: auto;">${result.details}</pre>`;
                     }
                 } else {
                     // Update efficiency scores
@@ -721,213 +613,13 @@
 
             } catch (error) {
                 console.error('Analysis error:', error);
-                summaryContent.innerHTML = `<span style="color: #f85149;"><strong>Network Error:</strong> Could not connect to the analysis server. Make sure the Node.js server is running on port 3000.</span>`;
+                summaryContent.innerHTML = `<span style="color: #f85149;"><strong>Network Error:</strong> Could not connect to the analysis server. Make sure the Node.js server is running on port 3000.</span><br><br>Error details: ${error.message}`;
             } finally {
                 isAnalyzing = false;
                 analyzeBtn.disabled = false;
                 analyzeBtn.textContent = 'Analyze Code';
             }
         });
-
-        // Smooth scroll behavior
-        const rightPanel = document.querySelector('.right-panel');
-        rightPanel.style.scrollBehavior = 'smooth';
-
-        /* ---------------------------------------------------------------------- */
-        /* C++ Editor Logic (Syntax Highlighting & LIVE Simulated Diagnostics) */
-        /* ---------------------------------------------------------------------- */
-
-        const codeInput = document.getElementById('code-input');
-        const highlightLayer = document.getElementById('highlight-layer');
-        const gutter = document.getElementById('gutter');
-        
-        let currentDiagnostics = [];
-        let updateTimeout;
-
-        // Initial C++ code template
-        const initialCode = 
-`#include <iostream>
-#include <vector>
-
-// LLVM MCA analyzes the micro-architectural performance of assembly code.
-// Write your performance-critical C++ function here.
-
-void my_vector_add(std::vector<int>& data) {
-    int unused_counter = 0; // This variable will trigger a Warning
-    
-    // Simple operation for micro-architecture analysis
-    for (size_t i = 0; i < data.size(); ++i) { 
-        data[i] += 1; 
-    }
-} 
-
-int main() {
-    std::vector<int> nums = {1, 2, 3, 4, 5, 6, 7, 8};
-    my_vector_add(nums);
-    
-    return 0;
-}
-`;
-        codeInput.value = initialCode;
-
-        // C++ Keywords, Types, and Preprocessor Directives for highlighting
-        const keywords = ['if', 'else', 'while', 'for', 'do', 'break', 'continue', 'return', 'switch', 'case', 'default', 'goto', 'public', 'private', 'protected', 'class', 'struct', 'union', 'enum', 'typedef', 'using', 'namespace', 'operator', 'new', 'delete', 'this', 'const', 'static', 'extern', 'volatile', 'register', 'inline', 'virtual', 'explicit', 'friend', 'typename', 'template', 'concept', 'requires', 'co_await', 'co_yield', 'co_return', 'alignas', 'alignof', 'decltype', 'noexcept', 'nullptr', 'thread_local'];
-        const types = ['int', 'long', 'short', 'float', 'double', 'char', 'bool', 'void', 'size_t', 'auto', 'decltype', 'std::string', 'std::cout', 'std::cin', 'std::endl', 'char*', 'int*', 'std::vector'];
-        const functions = ['main', 'my_vector_add']; 
-        
-        const keywordRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
-        const typeRegex = new RegExp(`\\b(${types.join('|')})\\b`, 'g');
-        const functionRegex = new RegExp(`\\b(${functions.join('|')})\\b`, 'g');
-
-        function highlight(code) {
-            let escaped = code
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-            
-            let highlighted = escaped
-                .replace(/(&quot;[^&]*?&quot;|&#39;[^&]*?&#39;)/g, (match) => `<span class="string">${match}</span>`)
-                .replace(/(\/\/[^\n]*)/g, (match) => `<span class="comment">${match}</span>`)
-                .replace(/^(\s*#[^\n]*)/gm, (match) => `<span class="macro">${match}</span>`)
-                .replace(keywordRegex, (match) => `<span class="keyword">${match}</span>`)
-                .replace(typeRegex, (match) => `<span class="type">${match}</span>`)
-                .replace(functionRegex, (match) => `<span class="function">${match}</span>`);
-
-            return highlighted;
-        }
-
-        function simulateDiagnostics(code) {
-            const diagnostics = [];
-            const lines = code.split('\n');
-            
-            const unusedVarLineIndex = lines.findIndex(line => line.includes('unused_counter'));
-            if (unusedVarLineIndex !== -1 && lines[unusedVarLineIndex].includes('unused_counter')) {
-                 diagnostics.push({
-                    line: unusedVarLineIndex + 1,
-                    severity: "Warning",
-                    message: "Unused variable 'unused_counter'. This variable is declared but never read; consider removing it or using it to eliminate compiler warnings."
-                });
-            }
-
-            const loopLineIndex = lines.findIndex(line => line.includes('for (size_t i = 0; i < data.size(); ++i)'));
-            if (loopLineIndex !== -1) {
-                 diagnostics.push({
-                    line: loopLineIndex + 1,
-                    severity: "Note",
-                    message: "Micro-Architecture Analysis suggests: The loop size is determined at runtime ('data.size()'). This prevents the compiler from performing aggressive unrolling and may impact optimal Instruction-Level Parallelism (ILP). Consider using fixed-size arrays or passing the size as a constant if possible."
-                });
-            }
-            
-            if (lines.length > 1 && !code.includes('return 0;')) {
-                const mainLine = lines.findIndex(line => line.includes('int main()'));
-                 diagnostics.push({
-                    line: mainLine !== -1 ? mainLine + 1 : 1,
-                    severity: "Error",
-                    message: "Non-void function 'main' does not return a value. This will result in undefined behavior and a compiler error in modern C++ standards."
-                });
-            }
-
-            return diagnostics;
-        }
-
-        function renderEditorUI() {
-            const code = codeInput.value;
-            const lines = code.split('\n');
-
-            highlightLayer.innerHTML = highlight(code) + '\n';
-
-            let gutterHTML = '';
-            lines.forEach((line, index) => {
-                const lineNumber = index + 1;
-                const lineDiagnostics = currentDiagnostics.filter(d => d.line === lineNumber);
-                
-                let lineClass = 'line-number-item';
-                let markerHTML = '';
-
-                if (lineDiagnostics.length > 0) {
-                    const hasError = lineDiagnostics.some(d => d.severity.toLowerCase() === 'error');
-                    const hasWarning = lineDiagnostics.some(d => d.severity.toLowerCase() === 'warning');
-                    
-                    if (hasError) {
-                        lineClass += ' error-line';
-                    } else if (hasWarning) {
-                        lineClass += ' warning-line';
-                    } else {
-                        lineClass += ' note-line';
-                    }
-                    
-                    lineDiagnostics.forEach(error => {
-                        const severityLower = error.severity.toLowerCase();
-                        let markerSymbol;
-                        let markerClass;
-                        
-                        if (severityLower === 'error') {
-                            markerSymbol = '&#x25CF;';
-                            markerClass = 'error-marker';
-                        } else if (severityLower === 'warning') {
-                            markerSymbol = '&#x25B2;';
-                            markerClass = 'warning-marker';
-                        } else {
-                            markerSymbol = '&#x25D9;';
-                            markerClass = 'note-marker';
-                        }
-                        
-                        markerHTML += `
-                            <span class="${markerClass}">
-                                ${markerSymbol}
-                                <span class="diagnostic-tooltip">
-                                    <strong style="text-transform: capitalize;">${error.severity}:</strong> ${error.message}
-                                </span>
-                            </span>
-                        `;
-                    });
-                }
-
-                gutterHTML += `<div class="${lineClass}">
-                    <span>${lineNumber}</span>
-                    ${markerHTML}
-                </div>`;
-            });
-            gutter.innerHTML = gutterHTML;
-        }
-        
-        function updateEditor() {
-            renderEditorUI();
-            
-            clearTimeout(updateTimeout);
-            updateTimeout = setTimeout(() => {
-                currentDiagnostics = simulateDiagnostics(codeInput.value);
-                renderEditorUI();
-            }, 300);
-        }
-
-        function syncScroll() {
-            highlightLayer.scrollTop = codeInput.scrollTop;
-            highlightLayer.scrollLeft = codeInput.scrollLeft;
-            gutter.scrollTop = codeInput.scrollTop;
-        }
-        
-        // Initial setup and event listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            updateEditor(); 
-            codeInput.addEventListener('input', updateEditor);
-            codeInput.addEventListener('scroll', syncScroll);
-            
-            document.querySelector('.select-all-btn').addEventListener('click', () => {
-                codeInput.focus();
-                codeInput.select();
-            });
-
-            if (window.innerWidth <= 768) {
-                resizer.addEventListener('mousedown', (e) => {
-                    isResizing = true;
-                    resizer.classList.add('resizing');
-                    document.body.style.cursor = 'row-resize';
-                    document.body.style.userSelect = 'none';
-                });
-            }
-        });
-        
     </script>
 </body>
 </html>
