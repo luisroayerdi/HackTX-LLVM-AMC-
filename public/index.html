@@ -193,13 +193,20 @@
         .right-panel::-webkit-scrollbar-thumb:hover { background: #484f58; }
 
         .score-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            display: flex;
+            justify-content: center;
             gap: 24px;
             margin-bottom: 32px;
         }
         
-        .score-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; text-align: center; }
+        .score-card { 
+            background: #161b22; 
+            border: 1px solid #30363d; 
+            border-radius: 8px; 
+            padding: 20px; 
+            text-align: center; 
+            min-width: 250px;
+        }
         .score-title { font-size: 16px; color: #8b949e; margin-bottom: 16px; }
         .circular-progress { position: relative; width: 140px; height: 140px; margin: 0 auto; }
         .progress-ring-circle { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; stroke: #21262d; }
@@ -212,10 +219,39 @@
         .arch-diagram { display: flex; justify-content: center; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
         .pipeline-stage { text-align: center; min-width: 100px; }
         .stage-title { font-size: 14px; color: #8b949e; margin-bottom: 8px; }
-        .stage-box { background: #21262d; border: 1px solid #30363d; border-radius: 4px; padding: 10px; margin-bottom: 4px; font-size: 12px; }
-        .stage-box.low-pressure { border-color: #58a6ff; color: #58a6ff; }
-        .stage-box.medium-pressure { border-color: #58a6ff; color: #58a6ff; }
-        .stage-box.high-pressure { border-color: #f85149; color: #f85149; }
+        .stage-box { 
+            background: #21262d; 
+            border: 2px solid #30363d; 
+            border-radius: 6px; 
+            padding: 12px 10px; 
+            margin-bottom: 6px; 
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        /* Pressure color coding */
+        .stage-box.low-pressure { 
+            background: rgba(88, 166, 255, 0.15);
+            border-color: #58a6ff; 
+            color: #58a6ff;
+            box-shadow: 0 0 8px rgba(88, 166, 255, 0.3);
+        }
+        
+        .stage-box.medium-pressure { 
+            background: rgba(255, 165, 0, 0.15);
+            border-color: #fb8500; 
+            color: #fb8500;
+            box-shadow: 0 0 8px rgba(251, 133, 0, 0.3);
+        }
+        
+        .stage-box.high-pressure { 
+            background: rgba(248, 81, 73, 0.15);
+            border-color: #f85149; 
+            color: #f85149;
+            box-shadow: 0 0 8px rgba(248, 81, 73, 0.4);
+        }
+        
         .arrow { font-size: 24px; color: #30363d; margin-top: 30px; }
 
         .ai-summary-content { font-size: 14px; line-height: 1.6; color: #8b949e; }
@@ -257,6 +293,10 @@
             .header {
                 padding: 0 16px;
             }
+            .score-section {
+                flex-direction: column;
+                align-items: center;
+            }
         }
 
     </style>
@@ -267,7 +307,7 @@
             <div class="logo">MCA++</div>
             <div class="header-controls">
                 <div class="arch-selector">
-                    <button class="arch-btn active" data-arch="npu">NPU</button>
+                    <button class="arch-btn active" data-arch="npu">Ethos</button>
                     <button class="arch-btn" data-arch="cortexa">CortexA</button>
                 </div>
                 <button class="run-btn select-all-btn">Select All</button>
@@ -290,18 +330,6 @@
                     <div class="score-card">
                         <div class="score-title">Efficiency Score</div>
                         <div class="circular-progress" id="efficiency-progress">
-                            <svg class="progress-ring" width="140" height="140">
-                                <circle class="progress-ring-circle" stroke-width="8" fill="transparent" r="62" cx="70" cy="70"/>
-                                <circle class="progress-ring-circle active" stroke-width="8" fill="transparent" r="62" cx="70" cy="70" 
-                                        style="stroke-dasharray: 389.557; stroke-dashoffset: 389.557;"/>
-                            </svg>
-                            <div class="progress-text">--%</div>
-                        </div>
-                    </div>
-
-                    <div class="score-card">
-                        <div class="score-title">Wasted Potential</div>
-                        <div class="circular-progress" id="wasted-progress">
                             <svg class="progress-ring" width="140" height="140">
                                 <circle class="progress-ring-circle" stroke-width="8" fill="transparent" r="62" cx="70" cy="70"/>
                                 <circle class="progress-ring-circle active" stroke-width="8" fill="transparent" r="62" cx="70" cy="70" 
@@ -576,7 +604,6 @@ int main() {
             let summary = `<strong>Target:</strong> ${targetCpu}<br><br>`;
             summary += `<strong>Performance Metrics:</strong><br>`;
             summary += `• Efficiency Score: ${scorecard.efficiency_score}%<br>`;
-            summary += `• Wasted Potential: ${scorecard.wasted_potential}%<br>`;
             summary += `• Cycles Lost to Stalls: ${scorecard.cycles_lost} cycles<br>`;
             summary += `• Ideal Cycles: ${scorecard.ideal_cycles} cycles<br><br>`;
 
@@ -631,15 +658,14 @@ int main() {
                         summaryContent.innerHTML += `<br><br><pre style="background: #0d1117; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 11px; max-height: 400px; overflow-y: auto;">${result.details}</pre>`;
                     }
                 } else {
-                    // Update efficiency scores
+                    // Update efficiency score only (removed wasted potential)
                     const scorecard = result.visualization_data.scorecard;
                     updateProgress(scorecard.efficiency_score, document.getElementById('efficiency-progress'));
-                    updateProgress(scorecard.wasted_potential, document.getElementById('wasted-progress'));
 
-                    // Update pipeline diagram
+                    // Update pipeline diagram with color coding
                     updatePipelineDiagram(result.visualization_data.pipeline);
 
-                    // Update summary with AI - AWAIT the promise!
+                    // Update summary with AI
                     summaryContent.innerHTML = '<span class="loading-spinner"></span> Generating AI summary...';
                     const summaryHtml = await generateSummary(result, code);
                     summaryContent.innerHTML = summaryHtml;
