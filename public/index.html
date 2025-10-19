@@ -536,11 +536,43 @@ int main() {
         }
 
         // Function to generate summary text
-        function generateSummary(data) {
+        async function generateSummary(data, code) {
             const scorecard = data.visualization_data.scorecard;
             const pipeline = data.visualization_data.pipeline;
             const targetCpu = data.target_cpu.toUpperCase();
 
+            // Show loading state
+            summaryContent.innerHTML = '<span class="loading-spinner"></span> Generating AI summary...';
+
+            try {
+                // Call the AI summary endpoint
+                const response = await fetch(`${API_BASE_URL}/summarize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        analysisData: data,
+                        code: code
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.summary) {
+                    // Format the AI summary with basic metrics at the top
+                    let formattedSummary = `<strong>Target:</strong> ${targetCpu}<br>`;
+                    formattedSummary += `<strong>IPC:</strong> ${data.mca_raw_data.IPC} | `;
+                    formattedSummary += `<strong>Efficiency:</strong> ${scorecard.efficiency_score}% | `;
+                    formattedSummary += `<strong>Cycles Lost:</strong> ${scorecard.cycles_lost}<br><br>`;
+                    formattedSummary += `<div style="line-height: 1.8;">${result.summary.replace(/\n/g, '<br>')}</div>`;
+                    return formattedSummary;
+                }
+            } catch (error) {
+                console.error('AI summary error:', error);
+            }
+
+            // Fallback to basic summary if AI fails
             let summary = `<strong>Target:</strong> ${targetCpu}<br><br>`;
             summary += `<strong>Performance Metrics:</strong><br>`;
             summary += `• Efficiency Score: ${scorecard.efficiency_score}%<br>`;
@@ -607,8 +639,10 @@ int main() {
                     // Update pipeline diagram
                     updatePipelineDiagram(result.visualization_data.pipeline);
 
-                    // Update summary
-                    summaryContent.innerHTML = generateSummary(result);
+                    // Update summary with AI - AWAIT the promise!
+                    summaryContent.innerHTML = '<span class="loading-spinner"></span> Generating AI summary...';
+                    const summaryHtml = await generateSummary(result, code);
+                    summaryContent.innerHTML = summaryHtml;
                 }
 
             } catch (error) {
