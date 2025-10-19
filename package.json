@@ -1,23 +1,35 @@
 {
-  "name": "hackut",
-  "version": "0.1.0",
+  "name": "hackut-llvm-mca-analyzer",
+  "version": "1.0.0",
+  "description": "LLVM MCA++ Analyzer with React IDE Interface",
+  "main": "server.js",
   "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "server": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["llvm", "mca", "performance", "analysis", "react", "ide"],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "@uiw/codemirror-theme-vscode": "^4.25.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   },
   "eslintConfig": {
     "extends": [
