@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CPP Editor — VSCode Theme (Monaco)</title>
+  <style>
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    .toolbar{display:flex;gap:8px;padding:8px;background:#1e1e1e;color:#ddd;align-items:center}
+    .toolbar button{background:#2d2d2d;border:1px solid #3c3c3c;color:#ddd;padding:6px 10px;border-radius:6px;cursor:pointer}
+    .toolbar .status{margin-left:auto;color:#9cdcfe;font-size:13px}
+    #editor{height:calc(100% - 48px)}
+    .note{font-size:12px;color:#c5c5c5;margin-left:12px}
+  </style>
+  <!-- RequireJS (for Monaco) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+</head>
+<body>
+  <div class="toolbar">
+    <button id="btn-theme">Toggle Theme</button>
+    <button id="btn-diagnose">Run Diagnostics</button>
+    <button id="btn-format">Format Document</button>
+    <div class="note">Heuristic C++ diagnostics (braces, parens, semicolons) — not a full compiler.</div>
+    <div class="status" id="status">Ready</div>
+  </div>
+  <div id="editor"></div>
+
+  <script>
+    // Configure Monaco loader path
+    require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.42.0/min/vs' } });
+    require(['vs/editor/editor.main'], function () {
+      const initial = `#include <iostream>
+
+int main() {
+    std::cout << "Hello, world!" << std::endl;
+    return 0;
+}
+`;
+
+      const editor = monaco.editor.create(document.getElementById('editor'), {
+        value: initial,
+        language: 'cpp',
+        theme: 'vs-dark',
+        automaticLayout: true,
+        fontSize: 14,
+        minimap: { enabled: false },
+        tabSize: 4,
+        insertSpaces: true,
+        autoClosingBrackets: 'always',
+        autoClosingQuotes: 'always',
+        formatOnType: true,
+        formatOnPaste: true,
+        autoIndent: 'full',
+        wordWrap: 'off',
+      });
+
+      // -- Automatic bracket pairing fallback (ensures cursor placed inside pair) --
+      editor.onKeyDown((e) => {
+        const model = editor.getModel();
+        const selections = editor.getSelections();
+        if (!selections) return;
+        const open = { '(': ')', '{': '}', '[': ']', '"': '"', "'": "'" };
+        const key = e.browserEvent.key;
+        if (open[key]) {
+          e.preventDefault();
+          editor.executeEdits('pair', selections.map(sel => ({
+            range: sel,
+            text: key + open[key],
+            forceMoveMarkers: true
+          })));
+          // move cursor one left (inside the pair)
+          editor.trigger('pair', 'cursorLeft', {});
+        }
+      });
+
+      // -- Simple diagnostics: unmatched brackets/parens and missing semicolons heuristics --
+      function runHeuristicDiagnostics() {
+        const model = editor.getModel();
+        const text = model.getValue();
+        const lines = text.split('\n');
+        const markers = [];
+
+        // 1) unmatched brackets/parens
+        const stack = [];
+        const pairs = { '(': ')', '{': '}', '[': ']' };
+        const openers = new Set(['(', '{', '[']);
+        const closers = new Set([')', '}', ']']);
+
+        for (let i = 0; i < lines.length; ++i) {
+          const line = lines[i];
+          for (let j = 0; j < line.length; ++j) {
+            const ch = line[j];
+            if (openers.has(ch)) stack.push({ ch, i, j });
+            else if (closers.has(ch)) {
+              const last = stack.pop();
+              if (!last || pairs[last.ch] !== ch) {
+                markers.push({
+                  severity: monaco.MarkerSeverity.Error,
+                  message: `Unmatched '${ch}'`,
+                  startLineNumber: i + 1,
+                  startColumn: j + 1,
+                  endLineNumber: i + 1,
+                  endColumn: j + 2
+                });
+              }
+            }
+          }
+        }
+        // leftover openers
+        while (stack.length) {
+          const leftover = stack.pop();
+          markers.push({
+            severity: monaco.MarkerSeverity.Error,
+            message: `Unmatched '${leftover.ch}'`,
+            startLineNumber: leftover.i + 1,
+            startColumn: leftover.j + 1,
+            endLineNumber: leftover.i + 1,
+            endColumn: leftover.j + 2
+          });
+        }
+
+        // 2) missing semicolons heuristic: line ends that probably need semicolons
+        const noSemiExceptions = ['#', '{', '}', ')', ':', '//'];
+        for (let i = 0; i < lines.length; ++i) {
+          const raw = lines[i].trim();
+          if (!raw) continue;
+          // skip preprocessor, block open/close, control structures and comments and function headers
+          const startsWith = noSemiExceptions.some(s => raw.startsWith(s));
+          const controlKeywords = /^(if|for|while|switch|else|do|class|struct|namespace|template)\b/;
+          const likelyFunctionDecl = /\)\s*\{$/;
+
+          if (!startsWith && !controlKeywords.test(raw) && !raw.endsWith(';') && !likelyFunctionDecl.test(raw) && !raw.endsWith('}')) {
+            // very simple check: lines that contain operators or assignments or return/throw/continue
+            const suspect = /\b(return|throw|break|continue)\b|=|<<|>>|\+\+|--/;
+            if (suspect.test(raw)) {
+              markers.push({
+                severity: monaco.MarkerSeverity.Warning,
+                message: 'Possible missing semicolon',
+                startLineNumber: i + 1,
+                startColumn: 1,
+                endLineNumber: i + 1,
+                endColumn: lines[i].length + 1
+              });
+            }
+          }
+        }
+
+        monaco.editor.setModelMarkers(model, 'owner', markers);
+        document.getElementById('status').textContent = `Diagnostics: ${markers.length} issue(s)`;
+      }
+
+      // format using built-in formatting if available
+      document.getElementById('btn-format').addEventListener('click', () => {
+        editor.getAction('editor.action.formatDocument').run();
+      });
+
+      // run diagnostics button
+      document.getElementById('btn-diagnose').addEventListener('click', runHeuristicDiagnostics);
+
+      // toggle theme
+      let dark = true;
+      document.getElementById('btn-theme').addEventListener('click', () => {
+        dark = !dark;
+        monaco.editor.setTheme(dark ? 'vs-dark' : 'vs');
+      });
+
+      // run diagnostics automatically after edits, debounced
+      let diagTimer = null;
+      editor.onDidChangeModelContent(() => {
+        document.getElementById('status').textContent = 'Typing...';
+        clearTimeout(diagTimer);
+        diagTimer = setTimeout(() => {
+          runHeuristicDiagnostics();
+        }, 800);
+      });
+
+      // initial diagnostics
+      runHeuristicDiagnostics();
+
+      // expose for debugging
+      window.cppEditor = { editor, runHeuristicDiagnostics };
+    });
+  </script>
+</body>
+</html>

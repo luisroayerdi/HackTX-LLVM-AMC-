@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCA++ | LLVM MCA Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            overflow: hidden;
+            height: 100vh; 
+        }
+
+        .app-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100vh; 
+        }
+
+        .header {
+            height: 60px;
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .arch-selector {
+            display: flex;
+            background: #0d1117;
+            border-radius: 6px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .arch-btn {
+            padding: 8px 16px;
+            background: transparent;
+            color: #8b949e;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .arch-btn.active {
+            background: #1f6feb;
+            color: #fff;
+        }
+
+        .arch-btn:hover:not(.active) {
+            background: #21262d;
+            color: #c9d1d9;
+        }
+
+        .run-btn {
+            padding: 8px 20px;
+            background: #238636;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .select-all-btn {
+            background: #30363d;
+        }
+        
+        .select-all-btn:hover {
+            background: #484f58;
+        }
+
+        .run-btn:hover {
+            background: #2ea043;
+        }
+
+        .run-btn:disabled {
+            background: #484f58;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .main-container {
+            display: flex;
+            flex-grow: 1; 
+            position: relative;
+        }
+
+        .left-panel {
+            background: #0d1117;
+            border-right: 1px solid #30363d;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-width: 300px;
+            width: 45%;
+        }
+
+        .code-header {
+            padding: 12px 16px;
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            font-size: 13px;
+            color: #8b949e;
+            flex-shrink: 0;
+        }
+
+        .code-editor {
+            flex: 1;
+            position: relative;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            display: flex;
+        }
+        
+        .gutter {
+            background: #161b22;
+            border-right: 1px solid #30363d;
+            padding: 16px 8px; 
+            color: #6e7681;
+            text-align: right;
+            width: 62px;
+            flex-shrink: 0;
+            overflow: hidden;
+            position: relative;
+            user-select: none;
+            line-height: 1.6;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+        }
+        
+        .line-number-item {
+            padding-right: 8px;
+            height: 1.6em; 
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            width: 100%;
+        }
+
+        .line-number-item.error-line {
+            background: rgba(248, 81, 73, 0.1);
+        }
+        
+        .line-number-item.warning-line {
+            background: rgba(255, 171, 0, 0.1);
+        }
+        
+        .line-number-item.note-line {
+            background: rgba(88, 166, 255, 0.1);
+        }
+
+        .error-marker {
+            color: #f85149;
+            font-size: 10px;
+            margin-left: 4px;
+            cursor: pointer;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .warning-marker {
+            color: #ffab00;
+            font-size: 10px;
+            margin-left: 4px;
+            cursor: pointer;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .note-marker {
+            color: #58a6ff;
+            font-size: 10px;
+            margin-left: 4px;
+            cursor: pointer;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        #code-input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: transparent; 
+            caret-color: #c9d1d9;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: none;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 62px;
+            right: 0;
+            padding: 16px;
+            white-space: pre;
+            overflow: auto; 
+            z-index: 100; 
+            box-sizing: border-box;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .syntax-highlight {
+            flex-grow: 1;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 62px;
+            right: 0;
+            padding: 16px;
+            white-space: pre;
+            pointer-events: none;
+            z-index: 50; 
+            box-sizing: border-box;
+            overflow: hidden; 
+        }
+        
+        .diagnostic-tooltip {
+            position: absolute;
+            background: #1f1f1f;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-width: 300px;
+            z-index: 200; 
+            display: none;
+            left: 100%;
+            transform: translateY(-50%) translateX(10px);
+            pointer-events: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .error-marker .diagnostic-tooltip {
+            border-color: #f85149;
+            color: #f85149;
+        }
+
+        .warning-marker .diagnostic-tooltip {
+            border-color: #ffab00;
+            color: #ffab00;
+        }
+        
+        .note-marker .diagnostic-tooltip {
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+        
+        .error-marker:hover .diagnostic-tooltip,
+        .warning-marker:hover .diagnostic-tooltip,
+        .note-marker:hover .diagnostic-tooltip {
+            display: block;
+        }
+
+        .keyword { color: #ff7b72; }
+        .type { color: #79c0ff; }
+        .function { color: #d2a8ff; }
+        .string { color: #a5d6ff; }
+        .comment { color: #8b949e; }
+        .macro { color: #f0883e; }
+        .literal { color: #58a6ff; }
+
+        .resizer {
+            width: 4px;
+            background: transparent;
+            cursor: col-resize;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .resizer:hover {
+            background: #1f6feb;
+        }
+
+        .resizer.resizing {
+            background: #1f6feb;
+        }
+
+        .right-panel {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 24px;
+            min-width: 300px;
+        }
+
+        .right-panel::-webkit-scrollbar { width: 10px; }
+        .right-panel::-webkit-scrollbar-track { background: #0d1117; }
+        .right-panel::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+        .right-panel::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+        .score-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .score-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; text-align: center; }
+        .score-title { font-size: 16px; color: #8b949e; margin-bottom: 16px; }
+        .circular-progress { position: relative; width: 140px; height: 140px; margin: 0 auto; }
+        .progress-ring-circle { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; stroke: #21262d; }
+        .progress-ring-circle.active { stroke: #58a6ff; }
+        .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: 600; color: #58a6ff; }
+
+        .architecture-section, .ai-summary { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+        .section-title, .ai-summary-title { font-size: 18px; font-weight: 600; color: #c9d1d9; margin-bottom: 16px; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
+        
+        .arch-diagram { display: flex; justify-content: center; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+        .pipeline-stage { text-align: center; min-width: 100px; }
+        .stage-title { font-size: 14px; color: #8b949e; margin-bottom: 8px; }
+        .stage-box { background: #21262d; border: 1px solid #30363d; border-radius: 4px; padding: 10px; margin-bottom: 4px; font-size: 12px; }
+        .stage-box.low-pressure { border-color: #58a6ff; color: #58a6ff; }
+        .stage-box.medium-pressure { border-color: #58a6ff; color: #58a6ff; }
+        .stage-box.high-pressure { border-color: #f85149; color: #f85149; }
+        .arrow { font-size: 24px; color: #30363d; margin-top: 30px; }
+
+        .ai-summary-content { font-size: 14px; line-height: 1.6; color: #8b949e; }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #30363d;
+            border-top-color: #58a6ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+            .left-panel {
+                width: 100%;
+                height: 50vh; 
+                border-right: none;
+                border-bottom: 1px solid #30363d;
+            }
+            .right-panel {
+                width: 100%;
+                height: auto;
+                padding: 16px;
+            }
+            .resizer {
+                height: 4px;
+                width: 100%;
+                cursor: row-resize;
+            }
+            .header {
+                padding: 0 16px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="app-wrapper">
+        <header class="header">
+            <div class="logo">MCA++</div>
+            <div class="header-controls">
+                <div class="arch-selector">
+                    <button class="arch-btn active" data-arch="npu">NPU</button>
+                    <button class="arch-btn" data-arch="cortexa">CortexA</button>
+                </div>
+                <button class="run-btn select-all-btn">Select All</button>
+                <button class="run-btn" id="analyze-btn">Analyze Code</button>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <div class="left-panel">
+                <div class="code-header">C++ Code Editor (Simulated Diagnostics Active)</div>
+                <div class="code-editor">
+                    <div id="gutter" class="gutter"></div>
+                    <textarea id="code-input" spellcheck="false"></textarea>
+                    <pre id="highlight-layer" class="syntax-highlight"></pre>
+                </div>
+            </div>
+
+            <div class="resizer"></div>
+
+            <div class="right-panel">
+                <div class="score-section">
+                    <div class="score-card">
+                        <div class="score-title">Efficiency Score</div>
+                        <div class="circular-progress" id="efficiency-progress">
+                            <svg class="progress-ring" width="140" height="140">
+                                <circle class="progress-ring-circle" stroke-width="8" fill="transparent" r="62" cx="70" cy="70"/>
+                                <circle class="progress-ring-circle active" stroke-width="8" fill="transparent" r="62" cx="70" cy="70" 
+                                        style="stroke-dasharray: 389.557; stroke-dashoffset: 389.557;"/>
+                            </svg>
+                            <div class="progress-text">--%</div>
+                        </div>
+                    </div>
+
+                    <div class="score-card">
+                        <div class="score-title">Wasted Potential</div>
+                        <div class="circular-progress" id="wasted-progress">
+                            <svg class="progress-ring" width="140" height="140">
+                                <circle class="progress-ring-circle" stroke-width="8" fill="transparent" r="62" cx="70" cy="70"/>
+                                <circle class="progress-ring-circle active" stroke-width="8" fill="transparent" r="62" cx="70" cy="70" 
+                                        style="stroke-dasharray: 389.557; stroke-dashoffset: 389.557;"/>
+                            </svg>
+                            <div class="progress-text">--%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="architecture-section">
+                    <div class="section-title" id="arch-title">NPU Architecture</div>
+                    <div class="arch-diagram" id="npu-diagram">
+                        <div class="pipeline-stage">
+                            <div class="stage-title">Frontend</div>
+                            <div class="stage-box" data-stage="frontend-fetch">Fetch</div>
+                            <div class="stage-box" data-stage="frontend-decode">Decode</div>
+                            <div class="stage-box" data-stage="frontend-queue">Queue</div>
+                        </div>
+                        
+                        <div class="arrow">→</div>
+                        
+                        <div class="pipeline-stage">
+                            <div class="stage-title">Compute</div>
+                            <div class="stage-box" data-stage="compute-mac">MAC</div>
+                            <div class="stage-box" data-stage="compute-acc">Accumulator</div>
+                        </div>
+                        
+                        <div class="arrow">→</div>
+                        
+                        <div class="pipeline-stage">
+                            <div class="stage-title">Retire</div>
+                            <div class="stage-box" data-stage="retire-wb">Writeback</div>
+                            <div class="stage-box" data-stage="retire-commit">Commit</div>
+                        </div>
+                    </div>
+
+                    <div class="arch-diagram" id="cortexa-diagram" style="display: none;">
+                        <div class="pipeline-stage">
+                            <div class="stage-title">Frontend</div>
+                            <div class="stage-box" data-stage="frontend-fetch">Fetch</div>
+                            <div class="stage-box" data-stage="frontend-decode">Decode</div>
+                            <div class="stage-box" data-stage="frontend-rename">Rename</div>
+                        </div>
+                        
+                        <div class="arrow">→</div>
+                        
+                        <div class="pipeline-stage">
+                            <div class="stage-title">Backend</div>
+                            <div class="stage-box" data-stage="backend-intalu">Integer ALU</div>
+                            <div class="stage-box" data-stage="backend-fpsimd">FP/SIMD</div>
+                            <div class="stage-box" data-stage="backend-loadstore">Load/Store</div>
+                        </div>
+                        
+                        <div class="arrow">→</div>
+                        
+                        <div class="pipeline-stage">
+                            <div class="stage-title">Retire</div>
+                            <div class="stage-box" data-stage="retire-commit">Commit</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ai-summary">
+                    <div class="ai-summary-title">Analysis Summary</div>
+                    <div class="ai-summary-content" id="summary-content">
+                        Click "Analyze Code" to run LLVM MCA analysis on your C++ code. Results will include efficiency metrics and pipeline bottleneck identification.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentArch = 'npu';
+        let isAnalyzing = false;
+        
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:3000';
+
+        // Resizer functionality
+        const resizer = document.querySelector('.resizer');
+        const leftPanel = document.querySelector('.left-panel');
+        const mainContainer = document.querySelector('.main-container');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            resizer.classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const containerRect = mainContainer.getBoundingClientRect();
+            const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+            
+            if (newWidth > 20 && newWidth < 80) {
+                leftPanel.style.width = `${newWidth}%`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                resizer.classList.remove('resizing');
+                document.body.style.cursor = 'default';
+                document.body.style.userSelect = 'auto';
+            }
+        });
+
+        // Architecture switcher
+        const archButtons = document.querySelectorAll('.arch-btn');
+        const npuDiagram = document.getElementById('npu-diagram');
+        const cortexaDiagram = document.getElementById('cortexa-diagram');
+        const archTitle = document.getElementById('arch-title');
+
+        archButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                archButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                currentArch = btn.dataset.arch;
+                if (currentArch === 'npu') {
+                    npuDiagram.style.display = 'flex';
+                    cortexaDiagram.style.display = 'none';
+                    archTitle.textContent = 'NPU Architecture';
+                } else {
+                    npuDiagram.style.display = 'none';
+                    cortexaDiagram.style.display = 'flex';
+                    archTitle.textContent = 'CortexA Architecture';
+                }
+            });
+        });
+
+        // Function to update circular progress
+        function updateProgress(percentage, element) {
+            const circle = element.querySelector('.progress-ring-circle.active');
+            const text = element.querySelector('.progress-text');
+            const circumference = 2 * Math.PI * 62;
+            const offset = circumference - (percentage / 100) * circumference;
+            
+            circle.style.strokeDashoffset = offset;
+            text.textContent = `${percentage}%`;
+        }
+
+        // Function to update pipeline diagram based on analysis results
+        function updatePipelineDiagram(pipelineData) {
+            // Clear all pressure classes first
+            document.querySelectorAll('.stage-box').forEach(box => {
+                box.classList.remove('low-pressure', 'medium-pressure', 'high-pressure');
+            });
+
+            const activeDiagram = currentArch === 'npu' ? npuDiagram : cortexaDiagram;
+            
+            // Update frontend stages
+            const frontendStatus = pipelineData.frontend_status;
+            const frontendClass = frontendStatus.toLowerCase().replace(' ', '-');
+            activeDiagram.querySelectorAll('.stage-box[data-stage^="frontend"]').forEach(box => {
+                box.classList.add(frontendClass);
+            });
+
+            // Update backend/compute stages
+            if (currentArch === 'cortexa' && pipelineData.backend_units) {
+                const units = pipelineData.backend_units;
+                
+                // Map backend units to stage boxes
+                const unitMapping = {
+                    'Integer_ALU': 'backend-intalu',
+                    'FP_NEON': 'backend-fpsimd',
+                    'Load_Store': 'backend-loadstore'
+                };
+
+                Object.keys(unitMapping).forEach(unitKey => {
+                    const stageId = unitMapping[unitKey];
+                    const stageBox = activeDiagram.querySelector(`[data-stage="${stageId}"]`);
+                    if (stageBox && units[unitKey]) {
+                        const pressureClass = units[unitKey].pressure.toLowerCase().replace(' ', '-');
+                        stageBox.classList.add(pressureClass);
+                    }
+                });
+            } else if (currentArch === 'npu') {
+                // For NPU, apply general backend status to compute stages
+                const backendStatus = pipelineData.backend_overall_status || 'Low Pressure';
+                const backendClass = backendStatus.toLowerCase().replace(' ', '-');
+                activeDiagram.querySelectorAll('.stage-box[data-stage^="compute"]').forEach(box => {
+                    box.classList.add(backendClass);
+                });
+            }
+
+            // Retire stages typically have low pressure
+            activeDiagram.querySelectorAll('.stage-box[data-stage^="retire"]').forEach(box => {
+                box.classList.add('low-pressure');
+            });
+        }
+
+        // Function to generate summary text
+        function generateSummary(data) {
+            const scorecard = data.visualization_data.scorecard;
+            const pipeline = data.visualization_data.pipeline;
+            const targetCpu = data.target_cpu.toUpperCase();
+
+            let summary = `<strong>Target:</strong> ${targetCpu}<br><br>`;
+            summary += `<strong>Performance Metrics:</strong><br>`;
+            summary += `• Efficiency Score: ${scorecard.efficiency_score}%<br>`;
+            summary += `• Wasted Potential: ${scorecard.wasted_potential}%<br>`;
+            summary += `• Cycles Lost to Stalls: ${scorecard.cycles_lost} cycles<br>`;
+            summary += `• Ideal Cycles: ${scorecard.ideal_cycles} cycles<br><br>`;
+
+            summary += `<strong>Pipeline Analysis:</strong><br>`;
+            summary += `• Frontend Status: ${pipeline.frontend_status} (${pipeline.frontend_ratio} uOps/cycle)<br>`;
+            summary += `• Backend IPC: ${pipeline.backend_overall_ipc}<br><br>`;
+
+            if (pipeline.backend_units) {
+                summary += `<strong>Backend Unit Pressure:</strong><br>`;
+                Object.keys(pipeline.backend_units).forEach(unit => {
+                    const unitData = pipeline.backend_units[unit];
+                    const unitName = unit.replace('_', ' ');
+                    summary += `• ${unitName}: ${unitData.pressure}<br>`;
+                });
+            }
+
+            return summary;
+        }
+
+        // Analyze button click handler
+        document.getElementById('analyze-btn').addEventListener('click', async () => {
+            if (isAnalyzing) return;
+
+            const code = codeInput.value;
+            if (!code.trim()) {
+                alert('Please enter some C++ code to analyze.');
+                return;
+            }
+
+            isAnalyzing = true;
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const summaryContent = document.getElementById('summary-content');
+            
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<span class="loading-spinner"></span> Analyzing...';
+            summaryContent.innerHTML = 'Running LLVM MCA analysis... This may take a few seconds.';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        target: currentArch
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    summaryContent.innerHTML = `<span style="color: #f85149;"><strong>Error:</strong> ${result.error}</span>`;
+                    if (result.details) {
+                        summaryContent.innerHTML += `<br><br><pre style="background: #0d1117; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 11px;">${result.details}</pre>`;
+                    }
+                } else {
+                    // Update efficiency scores
+                    const scorecard = result.visualization_data.scorecard;
+                    updateProgress(scorecard.efficiency_score, document.getElementById('efficiency-progress'));
+                    updateProgress(scorecard.wasted_potential, document.getElementById('wasted-progress'));
+
+                    // Update pipeline diagram
+                    updatePipelineDiagram(result.visualization_data.pipeline);
+
+                    // Update summary
+                    summaryContent.innerHTML = generateSummary(result);
+                }
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                summaryContent.innerHTML = `<span style="color: #f85149;"><strong>Network Error:</strong> Could not connect to the analysis server. Make sure the Node.js server is running on port 3000.</span>`;
+            } finally {
+                isAnalyzing = false;
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'Analyze Code';
+            }
+        });
+
+        // Smooth scroll behavior
+        const rightPanel = document.querySelector('.right-panel');
+        rightPanel.style.scrollBehavior = 'smooth';
+
+        /* ---------------------------------------------------------------------- */
+        /* C++ Editor Logic (Syntax Highlighting & LIVE Simulated Diagnostics) */
+        /* ---------------------------------------------------------------------- */
+
+        const codeInput = document.getElementById('code-input');
+        const highlightLayer = document.getElementById('highlight-layer');
+        const gutter = document.getElementById('gutter');
+        
+        let currentDiagnostics = [];
+        let updateTimeout;
+
+        // Initial C++ code template
+        const initialCode = 
+`#include <iostream>
+#include <vector>
+
+// LLVM MCA analyzes the micro-architectural performance of assembly code.
+// Write your performance-critical C++ function here.
+
+void my_vector_add(std::vector<int>& data) {
+    int unused_counter = 0; // This variable will trigger a Warning
+    
+    // Simple operation for micro-architecture analysis
+    for (size_t i = 0; i < data.size(); ++i) { 
+        data[i] += 1; 
+    }
+} 
+
+int main() {
+    std::vector<int> nums = {1, 2, 3, 4, 5, 6, 7, 8};
+    my_vector_add(nums);
+    
+    return 0;
+}
+`;
+        codeInput.value = initialCode;
+
+        // C++ Keywords, Types, and Preprocessor Directives for highlighting
+        const keywords = ['if', 'else', 'while', 'for', 'do', 'break', 'continue', 'return', 'switch', 'case', 'default', 'goto', 'public', 'private', 'protected', 'class', 'struct', 'union', 'enum', 'typedef', 'using', 'namespace', 'operator', 'new', 'delete', 'this', 'const', 'static', 'extern', 'volatile', 'register', 'inline', 'virtual', 'explicit', 'friend', 'typename', 'template', 'concept', 'requires', 'co_await', 'co_yield', 'co_return', 'alignas', 'alignof', 'decltype', 'noexcept', 'nullptr', 'thread_local'];
+        const types = ['int', 'long', 'short', 'float', 'double', 'char', 'bool', 'void', 'size_t', 'auto', 'decltype', 'std::string', 'std::cout', 'std::cin', 'std::endl', 'char*', 'int*', 'std::vector'];
+        const functions = ['main', 'my_vector_add']; 
+        
+        const keywordRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+        const typeRegex = new RegExp(`\\b(${types.join('|')})\\b`, 'g');
+        const functionRegex = new RegExp(`\\b(${functions.join('|')})\\b`, 'g');
+
+        function highlight(code) {
+            let escaped = code
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            let highlighted = escaped
+                .replace(/(&quot;[^&]*?&quot;|&#39;[^&]*?&#39;)/g, (match) => `<span class="string">${match}</span>`)
+                .replace(/(\/\/[^\n]*)/g, (match) => `<span class="comment">${match}</span>`)
+                .replace(/^(\s*#[^\n]*)/gm, (match) => `<span class="macro">${match}</span>`)
+                .replace(keywordRegex, (match) => `<span class="keyword">${match}</span>`)
+                .replace(typeRegex, (match) => `<span class="type">${match}</span>`)
+                .replace(functionRegex, (match) => `<span class="function">${match}</span>`);
+
+            return highlighted;
+        }
+
+        function simulateDiagnostics(code) {
+            const diagnostics = [];
+            const lines = code.split('\n');
+            
+            const unusedVarLineIndex = lines.findIndex(line => line.includes('unused_counter'));
+            if (unusedVarLineIndex !== -1 && lines[unusedVarLineIndex].includes('unused_counter')) {
+                 diagnostics.push({
+                    line: unusedVarLineIndex + 1,
+                    severity: "Warning",
+                    message: "Unused variable 'unused_counter'. This variable is declared but never read; consider removing it or using it to eliminate compiler warnings."
+                });
+            }
+
+            const loopLineIndex = lines.findIndex(line => line.includes('for (size_t i = 0; i < data.size(); ++i)'));
+            if (loopLineIndex !== -1) {
+                 diagnostics.push({
+                    line: loopLineIndex + 1,
+                    severity: "Note",
+                    message: "Micro-Architecture Analysis suggests: The loop size is determined at runtime ('data.size()'). This prevents the compiler from performing aggressive unrolling and may impact optimal Instruction-Level Parallelism (ILP). Consider using fixed-size arrays or passing the size as a constant if possible."
+                });
+            }
+            
+            if (lines.length > 1 && !code.includes('return 0;')) {
+                const mainLine = lines.findIndex(line => line.includes('int main()'));
+                 diagnostics.push({
+                    line: mainLine !== -1 ? mainLine + 1 : 1,
+                    severity: "Error",
+                    message: "Non-void function 'main' does not return a value. This will result in undefined behavior and a compiler error in modern C++ standards."
+                });
+            }
+
+            return diagnostics;
+        }
+
+        function renderEditorUI() {
+            const code = codeInput.value;
+            const lines = code.split('\n');
+
+            highlightLayer.innerHTML = highlight(code) + '\n';
+
+            let gutterHTML = '';
+            lines.forEach((line, index) => {
+                const lineNumber = index + 1;
+                const lineDiagnostics = currentDiagnostics.filter(d => d.line === lineNumber);
+                
+                let lineClass = 'line-number-item';
+                let markerHTML = '';
+
+                if (lineDiagnostics.length > 0) {
+                    const hasError = lineDiagnostics.some(d => d.severity.toLowerCase() === 'error');
+                    const hasWarning = lineDiagnostics.some(d => d.severity.toLowerCase() === 'warning');
+                    
+                    if (hasError) {
+                        lineClass += ' error-line';
+                    } else if (hasWarning) {
+                        lineClass += ' warning-line';
+                    } else {
+                        lineClass += ' note-line';
+                    }
+                    
+                    lineDiagnostics.forEach(error => {
+                        const severityLower = error.severity.toLowerCase();
+                        let markerSymbol;
+                        let markerClass;
+                        
+                        if (severityLower === 'error') {
+                            markerSymbol = '&#x25CF;';
+                            markerClass = 'error-marker';
+                        } else if (severityLower === 'warning') {
+                            markerSymbol = '&#x25B2;';
+                            markerClass = 'warning-marker';
+                        } else {
+                            markerSymbol = '&#x25D9;';
+                            markerClass = 'note-marker';
+                        }
+                        
+                        markerHTML += `
+                            <span class="${markerClass}">
+                                ${markerSymbol}
+                                <span class="diagnostic-tooltip">
+                                    <strong style="text-transform: capitalize;">${error.severity}:</strong> ${error.message}
+                                </span>
+                            </span>
+                        `;
+                    });
+                }
+
+                gutterHTML += `<div class="${lineClass}">
+                    <span>${lineNumber}</span>
+                    ${markerHTML}
+                </div>`;
+            });
+            gutter.innerHTML = gutterHTML;
+        }
+        
+        function updateEditor() {
+            renderEditorUI();
+            
+            clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(() => {
+                currentDiagnostics = simulateDiagnostics(codeInput.value);
+                renderEditorUI();
+            }, 300);
+        }
+
+        function syncScroll() {
+            highlightLayer.scrollTop = codeInput.scrollTop;
+            highlightLayer.scrollLeft = codeInput.scrollLeft;
+            gutter.scrollTop = codeInput.scrollTop;
+        }
+        
+        // Initial setup and event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            updateEditor(); 
+            codeInput.addEventListener('input', updateEditor);
+            codeInput.addEventListener('scroll', syncScroll);
+            
+            document.querySelector('.select-all-btn').addEventListener('click', () => {
+                codeInput.focus();
+                codeInput.select();
+            });
+
+            if (window.innerWidth <= 768) {
+                resizer.addEventListener('mousedown', (e) => {
+                    isResizing = true;
+                    resizer.classList.add('resizing');
+                    document.body.style.cursor = 'row-resize';
+                    document.body.style.userSelect = 'none';
+                });
+            }
+        });
+        
+    </script>
+</body>
+</html>
